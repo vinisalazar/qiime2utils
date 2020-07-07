@@ -1,0 +1,49 @@
+"""
+Main script and executable.
+"""
+
+import argparse
+from qiimeutils import main
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Utility scripts for manipulating Qiime 2 data."
+    )
+    parser.add_argument(
+        "-t", "--table", help="Feature table in .qza or .biom or .tsv format."
+    )
+    parser.add_argument(
+        "-m",
+        "--manifest",
+        help="Manifest/metadata file in TSV format. Must have column 'sample-id'.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="Name of output directory. Default is './qiime-utils-output'",
+        default="./qiime-utils-output",
+        required=False,
+    )
+    parser.add_argument(
+        "-c",
+        "--column",
+        help="Metadata column to group by. Must be a column in Manifest file",
+        required=False,
+    )
+    parser.add_argument(
+        "-n",
+        "--n_abundant",
+        help="Get the n most abundant ASVs by sample or by metadata category (if 'column' arg is provided).",
+        required=False,
+    )
+    args = parser.parse_args()
+
+    # Create variables for arguments.
+    table = args.table
+    manifest = args.manifest
+    output = args.output
+    column = args.column
+    n = args.n_abundant
+
+    main(table, manifest, output, column, n)
