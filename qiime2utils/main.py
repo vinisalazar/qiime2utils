@@ -6,21 +6,49 @@ from subprocess import Popen, PIPE
 import pandas as pd
 
 
-def convert_and_filter(table, manifest, output, column, n):
+def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
     """
-    Creates joined table
-    :param table: Feature table from Qiime 2.
-    :param manifest: Manifest or metadata-file. Must be tab-delimited. Must have 'sample-id' as a column.
+    Pipeline to convert Qiime 2 artifacts, add metadata and taxonomy, and filter most abundant ASVs.
+    :param table: Feature table in QZA format from Qiime 2.
+    :param taxonomy: Taxonomy table in QZA format from Qiime 2.
+    :param metadata: Metadata or MANIFEST file. Must be tab-delimited. Must have 'sample-id' as a column.
     :param output: Name of output directory.
     :param column: Name of metadata column to group by. Must be a column in the Manifest file.
-    :param n: Get the n most abundant OTUs.
+    :param n: Get the n most abundant ASVs.
+    :param export_qza: Whether to export Qiime 2 artifacts.
     :return:
     """
-    biom_table_dir = export_qiime_artifact(table)
-    biom_table = path.join(biom_table_dir, "feature-table.biom")
-    feature_table = convert_biom_table(biom_table)
+    if export_qza:
+        biom_table_dir = export_qiime_artifact(table)
+        biom_table = path.join(biom_table_dir, "feature-table.biom")
+        taxonomy_table_dir = export_qiime_artifact(taxonomy)
+        taxonomy_table = path.join(taxonomy_table_dir, "taxonomy.tsv")
+    else:
+        biom_table = table
+        taxonomy_table = taxonomy
 
-    pass
+    feature_table = convert_biom_table(biom_table)
+    output_file = path.join(output, "feature-table-tax-metadata.tsv")
+    cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
+        feature_table, metadata, taxonomy_table
+    )
+    cat.to_csv(output_file, sep="\t")
+    if path.isfile(output_file):
+        print(
+            f"Wrote concatenated dataframe with count data, metadata and taxonomy to {output_file}."
+        )
+    if column or n:
+        output_file = path.join(output, f"ASVs_by_{column}_{n}_most_abundants.tsv")
+        str_ = ""
+        if n:
+            str_ += f"Selecting the {n} most abundant ASVs only."
+        if column:
+            str_ += f" Grouping by column {column}."
+        print(str_)
+        cat_df = n_largest_by_category(cat, counts, metadata, n=n, category=column)
+        cat_df.to_csv(output_file, sep="\t")
+        if path.isfile(output_file):
+            print(f"Wrote data to {output_file}.")
 
 
 def export_qiime_artifact(qza_file):
@@ -109,21 +137,23 @@ def merge_metadata_and_taxonomy(feature_table, metadata_file, taxonomy_file):
 
 
 def n_largest_by_category(
-    feature_table, metadata_file, taxonomy_file, n=0, category=None
+    cat=None, counts=None, metadata=None, n=0, category=None, run_merge=()
 ):
     """
-    :param feature_table: Tab delimited feature table..
-    :param metadata_file: Metadata (or MANIFEST) tab-delimited file.
-    :param taxonomy_file: Metadata-delimited taxonomy_file
+    :param cat: Output of merge_metadata_and_taxonomy
+    :param counts: Output of merge_metadata_and_taxonomy
+    :param metadata: Output of merge_metadata_and_taxonomy
     :param n: n most abundant ASVs to filter by. 0 does not filter.
     :param category: Filters sample by metadata category.
-    :return:
+    :param run_merge: Whether to run merge_metadata_and_taxonomy()
+                      If True, pass values merge_metadata_and_taxonomy to this argument as a list/tuple.
+    :return: Filtered and grouped df.
     """
 
-    # Import data and check data.
-    cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
-        feature_table, metadata_file, taxonomy_file
-    )
+    assert any((all(value is not None for value in (cat, counts, metadata)), run_merge))
+
+    if run_merge:
+        cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(*run_merge)
 
     # Get ASV and sample names for selecting later
     asvs = list(counts.columns)

@@ -1,5 +1,5 @@
 from .main import (
-    convert_and_filter,
+    pipeline,
     export_qiime_artifact,
     convert_biom_table,
     run_cmd,

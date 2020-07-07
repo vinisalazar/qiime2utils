@@ -3,11 +3,13 @@ General integration testing.
 """
 
 from os import path
+from shutil import rmtree
 from qiime2utils import (
     export_qiime_artifact,
     convert_biom_table,
     merge_metadata_and_taxonomy,
     n_largest_by_category,
+    pipeline,
 )
 
 
@@ -17,13 +19,7 @@ biom_table = "qiime2utils/data/table/feature-table.biom"
 metadata_file = "qiime2utils/data/metadata.tsv"
 feature_table = "qiime2utils/data/table/feature-table.tsv"
 taxonomy_table = "qiime2utils/data/taxonomy/taxonomy.tsv"
-
-# # Uncomment for local testing
-# out_dir = q2u.export_qiime_artifact(table)
-# cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
-#     feature_table, metadata_file, taxonomy_table
-# # # )
-# n_largest_by_category(feature_table, metadata_file, taxonomy_table, n=30)
+pipe_out = "qiime2utils/data/table/ASVs_by_Family_30_most_abundants.tsv"
 
 
 def test_export_qiime_artifact():
@@ -65,7 +61,9 @@ def test_merge_metadata_and_taxonomy():
 
 def test_n_largest_by_category():
     cat_df = n_largest_by_category(
-        feature_table, metadata_file, taxonomy_table, n=30, category="Family"
+        n=30,
+        category="Family",
+        run_merge=(feature_table, metadata_file, taxonomy_table,),
     )
     out_file = feature_table.replace(".tsv", "_by_Family.tsv")
     cat_df.to_csv(out_file)
@@ -73,7 +71,26 @@ def test_n_largest_by_category():
 
 
 def test_n_largest_by_sample():
-    cat_df = n_largest_by_category(feature_table, metadata_file, taxonomy_table, n=30)
+    cat_df = n_largest_by_category(
+        run_merge=(feature_table, metadata_file, taxonomy_table), n=30
+    )
     out_file = feature_table.replace(".tsv", "_by_sample.tsv")
     cat_df.to_csv(out_file)
     assert path.isfile(out_file), f"Could not filter by sample."
+
+
+def test_pipeline():
+    pipeline(
+        table_qza,
+        taxonomy_qza,
+        metadata_file,
+        output="qiime2utils/data/table",
+        column="Family",
+        n=30,
+    )
+    assert path.isfile(pipe_out)
+
+
+# Clean up
+rmtree("qiime2utils/data/table/")
+rmtree("qiime2utils/data/taxonomy/")
