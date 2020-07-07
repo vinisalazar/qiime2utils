@@ -124,9 +124,6 @@ def n_largest_by_category(
     cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
         feature_table, metadata_file, taxonomy_file
     )
-    assert (
-        category in metadata.columns
-    ), f"Category '{category}' must be a column in the metadata file."
 
     # Get ASV and sample names for selecting later
     asvs = list(counts.columns)
@@ -139,26 +136,34 @@ def n_largest_by_category(
     nlargest = dict()
 
     cat = cat.T
-    if category is not None:
-        category_values = {i for i in cat[category].value_counts().index if i == i}
-        samples_as_categories = False
-    else:
+    if category is None:
         category_values = samples
         samples_as_categories = True
+        category = "sample"
+    else:
+        assert (
+            category in metadata.columns
+        ), f"Category '{category}' must be a column in the metadata file."
+        category_values = {i for i in cat[category].value_counts().index if i == i}
+        samples_as_categories = False
+
     for value in category_values:
         if samples_as_categories:
-            grouped_df = cat.loc[value].astype("float")
+            grouped_df = cat.loc[value][asvs].astype("float")
             grouped_counts = grouped_df.nlargest(n)
         else:
             grouped_df = cat[cat[category] == value][asvs].astype("float")
             grouped_counts = grouped_df.sum().nlargest(n)
+            str_samples = " ".join(i for i in grouped_df.index if i in samples)
+            grouped_df["samples"] = str_samples
 
         grouped_counts = grouped_counts[grouped_counts > 0]
         grouped_asvs = list(grouped_counts.index)
         grouped_df = cat[grouped_asvs].copy().T
         grouped_df = grouped_df[tax_columns].copy()
         grouped_df["counts"] = grouped_counts
-        nlargest[value] = grouped_counts
+        grouped_df[category] = value
+        nlargest[value] = grouped_df
 
     cat_df = pd.concat((v for k, v in nlargest.items()))
 

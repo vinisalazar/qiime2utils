@@ -22,10 +22,8 @@ taxonomy_table = "qiime2utils/data/taxonomy/taxonomy.tsv"
 # out_dir = q2u.export_qiime_artifact(table)
 # cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
 #     feature_table, metadata_file, taxonomy_table
-# # )
-# n_largest_by_category(
-#     feature_table, metadata_file, taxonomy_table, n=30, category="Family"
-# )
+# # # )
+# n_largest_by_category(feature_table, metadata_file, taxonomy_table, n=30)
 
 
 def test_export_qiime_artifact():
@@ -72,3 +70,10 @@ def test_n_largest_by_category():
     out_file = feature_table.replace(".tsv", "_by_Family.tsv")
     cat_df.to_csv(out_file)
     assert path.isfile(out_file), f"Could not filter by category."
+
+
+def test_n_largest_by_sample():
+    cat_df = n_largest_by_category(feature_table, metadata_file, taxonomy_table, n=30)
+    out_file = feature_table.replace(".tsv", "_by_sample.tsv")
+    cat_df.to_csv(out_file)
+    assert path.isfile(out_file), f"Could not filter by sample."
