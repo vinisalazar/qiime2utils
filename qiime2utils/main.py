@@ -19,7 +19,7 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
     :return:
     """
     if export_qza:
-        print("Converting Qiime 2 artifacts")
+        print("Converting Qiime 2 artifacts [...]")
         biom_table_dir = export_qiime_artifact(table)
         biom_table = path.join(biom_table_dir, "feature-table.biom")
         taxonomy_table_dir = export_qiime_artifact(taxonomy)
@@ -28,11 +28,11 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
         biom_table = table
         taxonomy_table = taxonomy
 
-    print("Converting BIOM table")
-    feature_table = convert_biom_table(biom_table)
+    print("Converting BIOM table [...]")
+    feature_table = convert_biom_table(biom_table, _print=False)
     output_file = path.join(output, "feature-table-tax-metadata.tsv")
 
-    print("Merging metadata and taxonomy data to counts")
+    print("Merging metadata and taxonomy data to counts [...]")
     cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
         feature_table, metadata, taxonomy_table
     )
@@ -52,7 +52,7 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
         cat_df = n_largest_by_category(cat, counts, metadata, n=n, category=column)
         cat_df.to_csv(output_file, sep="\t")
         if path.isfile(output_file):
-            print(f"Wrote data to {output_file}.")
+            print(f"Wrote grouped/filtered data to {output_file}.")
 
 
 def export_qiime_artifact(qza_file, _print=False):
@@ -82,14 +82,14 @@ def convert_biom_table(biom_table, _print=False):
     biom_table, biom_table_abs = path.basename(biom_table), path.abspath(biom_table)
     biom_output = biom_table_abs.replace(".biom", ".tsv")
     cmd = f"biom convert -i {biom_table_abs} -o {biom_output} --to-tsv"
-    run_cmd(cmd, biom_table)
+    run_cmd(cmd, biom_table, _print=_print)
     format_cmd = f"tail -n +2 {biom_output} > {biom_output}.tmp && mv {biom_output}.tmp {biom_output}"
-    run_cmd(format_cmd, biom_output, _print=_print)
+    run_cmd(format_cmd, biom_output, _print=True)
 
     return biom_output
 
 
-def run_cmd(cmd, output=None, _print=True):
+def run_cmd(cmd, output, _print=True):
     """
     Runs a command in the shell.
     :param cmd: Command string.
@@ -100,12 +100,14 @@ def run_cmd(cmd, output=None, _print=True):
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = p.communicate()
 
-    if output is not None:
+    if _print:
         if path.exists(output):
             output = path.basename(output)
             print(f"Created file {output}.")
         else:
-            print("Couldn't create output file. Please check the stdout and stderr:")
+            print(
+                f"Couldn't create output file at {output}. Please check the stdout and stderr:"
+            )
             print(stdout, stderr)
             print(f"Command was:\t'{cmd}'")
 
