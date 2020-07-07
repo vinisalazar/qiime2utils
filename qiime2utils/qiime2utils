@@ -61,7 +61,7 @@ if __name__ == "__main__":
     metadata = args.metadata
     output = args.output
     column = args.column
-    n = args.n_abundant
+    n = int(args.n_abundant)
     export_qza = args.skip_qza is False
 
     pipeline(

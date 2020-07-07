@@ -92,5 +92,7 @@ def test_pipeline():
 
 
 # Clean up
-rmtree("qiime2utils/data/table/")
-rmtree("qiime2utils/data/taxonomy/")
+test_output = ["qiime2utils/data/table/", "qiime2utils/data/taxonomy/"]
+for path_ in test_output:
+    if path.isdir(path_):
+        rmtree(path_)

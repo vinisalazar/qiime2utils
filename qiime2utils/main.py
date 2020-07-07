@@ -19,6 +19,7 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
     :return:
     """
     if export_qza:
+        print("Converting Qiime 2 artifacts")
         biom_table_dir = export_qiime_artifact(table)
         biom_table = path.join(biom_table_dir, "feature-table.biom")
         taxonomy_table_dir = export_qiime_artifact(taxonomy)
@@ -27,8 +28,11 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
         biom_table = table
         taxonomy_table = taxonomy
 
+    print("Converting BIOM table")
     feature_table = convert_biom_table(biom_table)
     output_file = path.join(output, "feature-table-tax-metadata.tsv")
+
+    print("Merging metadata and taxonomy data to counts")
     cat, counts, metadata, taxonomy = merge_metadata_and_taxonomy(
         feature_table, metadata, taxonomy_table
     )
@@ -51,39 +55,41 @@ def pipeline(table, taxonomy, metadata, output, column, n, export_qza=True):
             print(f"Wrote data to {output_file}.")
 
 
-def export_qiime_artifact(qza_file):
+def export_qiime_artifact(qza_file, _print=False):
     """
     Exports a qiime .qza file.
     :param qza_file: A valid Qiime 2 qza file.
+    :param _print: pass to run_cmd
     :return: Output directory.
     """
     assert path.isfile(qza_file), f"{qza_file} does not exist!"
     qza_file, qza_file_abs = path.basename(qza_file), path.abspath(qza_file)
     out_dir = path.join(path.dirname(qza_file_abs), path.splitext(qza_file)[0])
     cmd = f"qiime tools export --input-path {qza_file_abs} --output-path {out_dir}"
-    run_cmd(cmd, out_dir)
+    run_cmd(cmd, out_dir, _print=_print)
 
     return out_dir
 
 
-def convert_biom_table(biom_table):
+def convert_biom_table(biom_table, _print=False):
     """
     Converts a Biom table to TSV.
     :param biom_table: A valid biom-table file.
+    :param _print: pass to run_cmd
     :return:
     """
     assert path.isfile(biom_table), f"{biom_table} does not exist!"
     biom_table, biom_table_abs = path.basename(biom_table), path.abspath(biom_table)
     biom_output = biom_table_abs.replace(".biom", ".tsv")
     cmd = f"biom convert -i {biom_table_abs} -o {biom_output} --to-tsv"
-    run_cmd(cmd, biom_output)
+    run_cmd(cmd, biom_table)
     format_cmd = f"tail -n +2 {biom_output} > {biom_output}.tmp && mv {biom_output}.tmp {biom_output}"
-    run_cmd(format_cmd, biom_output, _print=False)
+    run_cmd(format_cmd, biom_output, _print=_print)
 
     return biom_output
 
 
-def run_cmd(cmd, output, _print=True):
+def run_cmd(cmd, output=None, _print=True):
     """
     Runs a command in the shell.
     :param cmd: Command string.
@@ -94,12 +100,14 @@ def run_cmd(cmd, output, _print=True):
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = p.communicate()
 
-    if path.exists(output):
-        print(f"Created {output} successfully!")
-    else:
-        print("Couldn't create output file. Please check the stdout and stderr:")
-        print(stdout, stderr)
-        print(f"Command was:\t'{cmd}'")
+    if output is not None:
+        if path.exists(output):
+            output = path.basename(output)
+            print(f"Created file {output}.")
+        else:
+            print("Couldn't create output file. Please check the stdout and stderr:")
+            print(stdout, stderr)
+            print(f"Command was:\t'{cmd}'")
 
 
 def merge_metadata_and_taxonomy(feature_table, metadata_file, taxonomy_file):
