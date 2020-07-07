@@ -16,8 +16,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3.6",
     ],
     packages=setuptools.find_packages(),
-    scripts=["qiime2utils/qiime2utils.py"],
+    scripts=["qiime2utils/qiime2utils"],
     include_package_data=True,
     python_requires=">=3.6",
-    install_requires=[],
+    install_requires=["pandas", "pytest"],
 )

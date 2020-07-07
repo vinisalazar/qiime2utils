@@ -5,7 +5,7 @@ from os import path
 from subprocess import Popen, PIPE
 
 
-def main(table, manifest, output, column, n):
+def convert_and_filter(table, manifest, output, column, n):
     """
     Creates joined table
     :param table: Feature table from Qiime 2.
@@ -16,7 +16,7 @@ def main(table, manifest, output, column, n):
     :return:
     """
     biom_table_dir = export_qiime_artifact(table)
-    biom_table = path.joinpath(biom_table_dir, "feature-table.biom")
+    biom_table = path.join(biom_table_dir, "feature-table.biom")
     feature_table = convert_biom_table(biom_table)
 
     pass
@@ -30,7 +30,7 @@ def export_qiime_artifact(qza_file):
     """
     assert path.isfile(qza_file), f"{qza_file} does not exist!"
     qza_file, qza_file_abs = path.basename(qza_file), path.abspath(qza_file)
-    out_dir = path.joinpath(path.dirname(qza_file_abs), path.splitext(qza_file)[0])
+    out_dir = path.join(path.dirname(qza_file_abs), path.splitext(qza_file)[0])
     cmd = f"qiime tools export --input-path {qza_file_abs} --output-path {out_dir}"
     run_cmd(cmd, out_dir)
 
@@ -70,6 +70,7 @@ def run_cmd(cmd, output, _print=True):
     else:
         print("Couldn't create output file. Please check the stdout and stderr:")
         print(stdout, stderr)
+        print(f"Command was:\t'{cmd}'")
 
 
 def merge_metadata(feature_table, metadata_file):
