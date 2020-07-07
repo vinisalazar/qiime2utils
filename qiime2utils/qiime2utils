@@ -4,26 +4,36 @@ Main script and executable.
 """
 
 import argparse
-from qiime2utils.main import convert_and_filter
+from qiime2utils.main import pipeline
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Utility scripts for manipulating Qiime 2 data."
+        description="""
+        Utility scripts for manipulating Qiime 2 data.
+        
+        Example usage:
+        
+        # Get 30 most abundant by 'Host_Family' column of metadata
+        qiime2utils -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family' -n 30
+        """
     )
     parser.add_argument(
-        "-t", "--table", help="Feature table in .qza or .biom or .tsv format."
+        "-f", "--feature_table", help="Feature table in .qza or .biom or .tsv format."
+    )
+    parser.add_argument(
+        "-t", "--taxonomy_table", help="Taxonomy table in .qza or .tsv format."
     )
     parser.add_argument(
         "-m",
-        "--manifest",
-        help="Manifest/metadata file in TSV format. Must have column 'sample-id'.",
+        "--metadata",
+        help="Metadata/MANIFEST file in TSV format. Must have column 'sample-id'.",
     )
     parser.add_argument(
         "-o",
         "--output",
-        help="Name of output directory. Default is './qiime-utils-output'",
-        default="./qiime-utils-output",
+        help="Name of output directory. Default is current directory",
+        default="./",
         required=False,
     )
     parser.add_argument(
@@ -31,20 +41,35 @@ if __name__ == "__main__":
         "--column",
         help="Metadata column to group by. Must be a column in Manifest file",
         required=False,
+        default=None,
     )
     parser.add_argument(
         "-n",
         "--n_abundant",
         help="Get the n most abundant ASVs by sample or by metadata category (if 'column' arg is provided).",
         required=False,
+        default=0,
+    )
+    parser.add_argument(
+        "--skip_qza", action="store_true", help="Whether to skip QZA conversion."
     )
     args = parser.parse_args()
 
     # Create variables for arguments.
-    table = args.table
-    manifest = args.manifest
+    feature_table = args.feature_table
+    taxonomy = args.taxonomy_table
+    metadata = args.metadata
     output = args.output
     column = args.column
     n = args.n_abundant
+    export_qza = args.skip_qza is False
 
-    convert_and_filter(table, manifest, output, column, n)
+    pipeline(
+        table=feature_table,
+        taxonomy=taxonomy,
+        metadata=metadata,
+        output=output,
+        column=column,
+        n=n,
+        export_qza=export_qza,
+    )
