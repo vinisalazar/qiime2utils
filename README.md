@@ -18,3 +18,6 @@ qiime2utils -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family
 For any problems or suggestions, please open an issue at the [GitHub repository](https://github.com/vinisalazar/qiime2utils). Contributions are welcome!
 
 **qiime2utils is in active development and comes without warranties of any kind (please see the [license file.](LICENSE))**
+
+##### Test data
+At the moment, I am unable to provide test data. It will come in future versions.
