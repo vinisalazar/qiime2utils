@@ -267,7 +267,7 @@ def blastn(query, db, params, _print=True):
     outfmt = "'6 qseqid sseqid stitle pident length mismatch gapopen qstart qend sstart send evalue bitscore'"
     cmd = (
         blastn_bin
-        + f" -query {0} -db {1} -out {2} -outfmt {3} ".format(
+        + " -query {0} -db {1} -out {2} -outfmt {3} ".format(
             query, db, output_file, outfmt
         )
         + params.strip()
