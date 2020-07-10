@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "-f", "--feature_table", help="Feature table in .qza or .biom or .tsv format."
     )
     filter_by_category_parser.add_argument(
-        "-t", "--taxonomy_table", help="Taxonomy table in .qza or .tsv format."
+        "-t", "--taxonomy", help="Taxonomy table in .qza or .tsv format."
     )
     filter_by_category_parser.add_argument(
         "-m",
