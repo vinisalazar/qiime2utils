@@ -46,7 +46,7 @@ class OptionsParser:
             metadata=options.metadata,
             output=options.output,
             column=options.column,
-            n=options.n,
+            n=options.n_abundant,
             export_qza=options.export_qza,
         )
 
