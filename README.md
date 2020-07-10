@@ -12,7 +12,7 @@ pip install qiime2utils
 qiime2utils -h
 
 # Example usage
-qiime2utils -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family' -n 30
+qiime2utils filter_by_category -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family' -n 30
 ```
 
 For any problems or suggestions, please open an issue at the [GitHub repository](https://github.com/vinisalazar/qiime2utils). Contributions are welcome!
