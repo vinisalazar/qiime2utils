@@ -229,6 +229,7 @@ def extract_asvs_from_fasta(seqids, fasta_file):
     :return:
     """
     assert path.isfile(fasta_file), "FASTA file does not exist!"
+    print("Extracting ASVs from {}".format(fasta_file))
     records, subset = SeqIO.parse(fasta_file, "fasta"), []
     seqids = set(seqids)  # Drop duplicates
     no_subset = len(seqids)  # Number of sequences to subset
@@ -270,7 +271,7 @@ def blastn(query, db, params, _print=True):
     if _print:
         base_ = path.basename(query)
         print("Running BLASTn for {}".format(base_))
-        print("$ {}".format(cmd))
+        print("$ {}".format(" ".join(path.basename(i) for i in cmd)))
     run_cmd(cmd, output_file, _print=True)
 
     return output_file
