@@ -68,7 +68,7 @@ class OptionsParser:
 
         if options.subparser_name == "filter_by_category":
             self._filter_by_category(options)
-        elif options.subparser_name == "extract_asvs_and_blast":
+        elif options.subparser_name == "extract_and_blast":
             self._extract_asvs_and_blast(options)
 
         return 0
