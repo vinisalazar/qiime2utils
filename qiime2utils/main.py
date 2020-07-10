@@ -296,7 +296,7 @@ def extract_asvs_and_blast(
     asv_table = pd.read_csv(asv_table, sep="\t")
     seqids = set(asv_table.iloc[:, 0])
 
-    if not skip_convert_sequences:
+    if skip_convert_sequences:
         fasta_file = sequences
     else:
         fasta_file = path.join(export_qiime_artifact(sequences), "dna-sequences.fasta")

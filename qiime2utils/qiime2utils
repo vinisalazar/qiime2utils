@@ -107,8 +107,8 @@ if __name__ == "__main__":
     extract_asvs_and_blast_parser.add_argument(
         "--skip_convert_sequences",
         help="Skip converting sequences from .qza to .fasta",
-        default=True,
-        action="store_false",
+        default=False,
+        action="store_true",
     )
 
     filter_by_category_parser = subparsers.add_parser(
