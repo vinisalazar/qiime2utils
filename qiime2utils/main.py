@@ -7,7 +7,7 @@ from subprocess import Popen, PIPE, getoutput
 import pandas as pd
 
 
-def filter_by_category(table, taxonomy, metadata, output, column, n, export_qza=True):
+def filter_by_category(table, taxonomy, metadata, output, column, n, skip_qza=False):
     """
     Pipeline to convert Qiime 2 artifacts, add metadata and taxonomy, and filter most abundant ASVs.
     :param table: Feature table in QZA format from Qiime 2.
@@ -16,18 +16,18 @@ def filter_by_category(table, taxonomy, metadata, output, column, n, export_qza=
     :param output: Name of output directory.
     :param column: Name of metadata column to group by. Must be a column in the Manifest file.
     :param n: Get the n most abundant ASVs.
-    :param export_qza: Whether to export Qiime 2 artifacts.
+    :param skip_qza: Whether to skip converting Qiime 2 artifacts.
     :return:
     """
-    if export_qza:
+    if skip_qza:
+        biom_table = table
+        taxonomy_table = taxonomy
+    else:
         print("Converting Qiime 2 artifacts [...]")
         biom_table_dir = export_qiime_artifact(table)
         biom_table = path.join(biom_table_dir, "feature-table.biom")
         taxonomy_table_dir = export_qiime_artifact(taxonomy)
         taxonomy_table = path.join(taxonomy_table_dir, "taxonomy.tsv")
-    else:
-        biom_table = table
-        taxonomy_table = taxonomy
 
     print("Converting BIOM table [...]")
     feature_table = convert_biom_table(biom_table, _print=False)

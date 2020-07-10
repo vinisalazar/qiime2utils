@@ -47,7 +47,7 @@ class OptionsParser:
             output=options.output,
             column=options.column,
             n=options.n_abundant,
-            export_qza=options.skip_qza,
+            skip_qza=options.skip_qza,
         )
 
     @staticmethod
