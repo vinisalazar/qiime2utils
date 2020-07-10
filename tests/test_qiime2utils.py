@@ -9,7 +9,7 @@ from qiime2utils import (
     convert_biom_table,
     merge_metadata_and_taxonomy,
     n_largest_by_category,
-    pipeline,
+    filter_by_category,
 )
 
 
@@ -79,8 +79,8 @@ def test_n_largest_by_sample():
     assert path.isfile(out_file), f"Could not filter by sample."
 
 
-def test_pipeline():
-    pipeline(
+def test_filter_by_category():
+    filter_by_category(
         table_qza,
         taxonomy_qza,
         metadata_file,

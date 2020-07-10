@@ -19,5 +19,5 @@ setuptools.setup(
     scripts=["qiime2utils/qiime2utils"],
     include_package_data=True,
     python_requires=">=3.6",
-    install_requires=["pandas", "pytest"],
+    install_requires=("pytest", "pandas", "biopython"),
 )

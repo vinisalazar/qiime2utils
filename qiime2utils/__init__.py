@@ -1,5 +1,5 @@
 from .main import (
-    pipeline,
+    filter_by_category,
     export_qiime_artifact,
     convert_biom_table,
     run_cmd,

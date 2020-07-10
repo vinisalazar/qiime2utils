@@ -4,7 +4,7 @@ Main script and executable.
 """
 
 import argparse
-from qiime2utils.main import pipeline
+from qiime2utils.main import filter_by_category
 
 
 if __name__ == "__main__":
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     n = int(args.n_abundant)
     export_qza = args.skip_qza is False
 
-    pipeline(
+    filter_by_category(
         table=feature_table,
         taxonomy=taxonomy,
         metadata=metadata,
