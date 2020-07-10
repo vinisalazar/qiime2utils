@@ -5,7 +5,6 @@ Main script and executable.
 
 import sys
 import argparse
-from subprocess import getoutput
 from qiime2utils.main import filter_by_category, extract_asvs_and_blast
 
 
@@ -166,15 +165,6 @@ if __name__ == "__main__":
     else:
         args = parser.parse_args()
 
-    # Create variables for arguments.
-    feature_table = args.feature_table
-    taxonomy = args.taxonomy_table
-    metadata = args.metadata
-    output = args.output
-    column = args.column
-    n = int(args.n_abundant)
-    export_qza = args.skip_qza is False
-    if export_qza:  # check if Qiime is in path
-        assert "command not found" not in getoutput(
-            "qiime"
-        ), "Qiime has not been found. Check if it's on your $PATH."
+    # Calling the Options parser
+    parser = OptionsParser()
+    parser.parse_options(args)
