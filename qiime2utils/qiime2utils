@@ -4,6 +4,7 @@ Main script and executable.
 """
 
 import argparse
+from subprocess import getoutput
 from qiime2utils.main import filter_by_category
 
 
@@ -63,6 +64,10 @@ if __name__ == "__main__":
     column = args.column
     n = int(args.n_abundant)
     export_qza = args.skip_qza is False
+    if export_qza:  # check if Qiime is in path
+        assert "command not found" not in getoutput(
+            "qiime"
+        ), "Qiime has not been found. Check if it's on your $PATH."
 
     filter_by_category(
         table=feature_table,
