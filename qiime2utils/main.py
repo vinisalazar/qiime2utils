@@ -267,7 +267,7 @@ def blastn(query, db, params, _print=True):
     outfmt = "'6 qseqid sseqid stitle pident length mismatch gapopen qstart qend sstart send evalue bitscore'"
     cmd = (
         blastn_bin
-        + f"-query {0} -db {1} -out {2} -outfmt {3} ".format(
+        + f" -query {0} -db {1} -out {2} -outfmt {3} ".format(
             query, db, output_file, outfmt
         )
         + params.strip()
@@ -275,7 +275,7 @@ def blastn(query, db, params, _print=True):
     if _print:
         base_ = path.basename(query)
         print("Running BLASTn for {}".format(base_))
-        print("$ {}".format(" ".join(path.basename(i) for i in cmd)))
+        print("$ {}".format(" ".join(path.basename(i) for i in cmd.split())))
     run_cmd(cmd, output_file, _print=True)
 
     return output_file
