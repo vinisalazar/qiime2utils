@@ -152,6 +152,7 @@ if __name__ == "__main__":
         help="Get the n most abundant ASVs by sample or by metadata category (if 'column' arg is provided).",
         required=False,
         default=0,
+        type=int,
     )
     filter_by_category_parser.add_argument(
         "--skip_qza",
