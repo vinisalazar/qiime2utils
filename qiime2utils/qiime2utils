@@ -3,58 +3,168 @@
 Main script and executable.
 """
 
+import sys
 import argparse
 from subprocess import getoutput
-from qiime2utils.main import filter_by_category
+from qiime2utils.main import filter_by_category, extract_asvs_and_blast
+
+
+def print_help():
+    print(
+        """
+    Utility scripts for manipulating Qiime 2 data.
+        
+    filter_by_category: Group by a category of metadata and filter n most abundant organisms.
+                        Required files: feature_table, taxonomy_table, metadata.
+    
+    extract_and_blast: Run BLASTn for ASVs in the output of 'filter_by_category'.
+                       Required files: asv_table, sequences, blastdb.
+    
+    """
+    )
+
+
+class OptionsParser:
+    """
+    This class is shamelessly copied from Donovan Parks code.
+
+    https://github.com/dparks1134/CompareM/blob/55a6907c4fde6388e8858cfa5bd1282e7cdada78/comparem/main.py#L47
+    """
+
+    def __int__(self):
+        pass
+
+    @staticmethod
+    def _filter_by_category(options):
+        """
+        Run filter by category.
+        :param options:
+        :return:
+        """
+        filter_by_category(
+            table=options.feature_table,
+            taxonomy=options.taxonomy,
+            metadata=options.metadata,
+            output=options.output,
+            column=options.column,
+            n=options.n,
+            export_qza=options.export_qza,
+        )
+
+    @staticmethod
+    def _extract_asvs_and_blast(options):
+        extract_asvs_and_blast(
+            asv_table=options.asv_table,
+            db=options.db,
+            sequences=options.sequences,
+            params=options.params,
+            skip_convert_sequences=options.skip_convert_sequences,
+        )
+
+    def parse_options(self, options):
+        """
+        Parse user options and call the correct workflow.
+        :return:
+        """
+
+        if options.subparser_name == "filter_by_category":
+            self._filter_by_category(options)
+        elif options.subparser_name == "extract_asvs_and_blast":
+            self._extract_asvs_and_blast(options)
+
+        return 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
+
+    parser = argparse.ArgumentParser(add_help=False)
+    subparsers = parser.add_subparsers(help="--", dest="subparser_name")
+
+    extract_asvs_and_blast_parser = subparsers.add_parser(
+        "extract_and_blast",
         description="""
-        Utility scripts for manipulating Qiime 2 data.
-        
-        Example usage:
+        Extract ASVs present in ASV table from sequence file and BLASTn.
+                        Required files: ASV table, sequences, BLASTdb, BLAST params.
+        """,
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "-a",
+        "--asv_table",
+        help="ASV table (output of filter_by_category)",
+        required=True,
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "-db", "--db", help="Path to BLAST database.", required=True
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "-s",
+        "--sequences",
+        help="Sequences in either .qza or .fasta format.",
+        required=True,
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "--params", help="Parameters to pass to BLASTn"
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "--skip_convert_sequences",
+        help="Skip converting sequences from .qza to .fasta",
+        default=True,
+        action="store_false",
+    )
+
+    filter_by_category_parser = subparsers.add_parser(
+        "filter_by_category",
+        description="""
+        Group by a category of metadata and filter n most abundant organisms.
+                        Required files: feature_table, taxonomy_table, metadata.
         
         # Get 30 most abundant by 'Host_Family' column of metadata
-        qiime2utils -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family' -n 30
-        """
+        qiime2utils filter_by_category -f feature_table.qza -t taxonomy.qza -m manifest.tsv -c 'Host_Family' -n 30
+        """,
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-f", "--feature_table", help="Feature table in .qza or .biom or .tsv format."
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-t", "--taxonomy_table", help="Taxonomy table in .qza or .tsv format."
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-m",
         "--metadata",
         help="Metadata/MANIFEST file in TSV format. Must have column 'sample-id'.",
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-o",
         "--output",
         help="Name of output directory. Default is current directory",
         default="./",
         required=False,
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-c",
         "--column",
         help="Metadata column to group by. Must be a column in Manifest file",
         required=False,
         default=None,
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "-n",
         "--n_abundant",
         help="Get the n most abundant ASVs by sample or by metadata category (if 'column' arg is provided).",
         required=False,
         default=0,
     )
-    parser.add_argument(
+    filter_by_category_parser.add_argument(
         "--skip_qza", action="store_true", help="Whether to skip QZA conversion."
     )
-    args = parser.parse_args()
+
+    # Refactoring to subparsers
+    args = None
+    if len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv == "--help":
+        print_help()
+        sys.exit(0)
+    else:
+        args = parser.parse_args()
 
     # Create variables for arguments.
     feature_table = args.feature_table
@@ -68,13 +178,3 @@ if __name__ == "__main__":
         assert "command not found" not in getoutput(
             "qiime"
         ), "Qiime has not been found. Check if it's on your $PATH."
-
-    filter_by_category(
-        table=feature_table,
-        taxonomy=taxonomy,
-        metadata=metadata,
-        output=output,
-        column=column,
-        n=n,
-        export_qza=export_qza,
-    )

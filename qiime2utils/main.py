@@ -277,7 +277,7 @@ def blastn(query, db, params, _print=True):
 
 
 def extract_asvs_and_blast(
-    asv_table, db, sequences, params="-max_target_seqs 25", convert_sequences=False
+    asv_table, db, sequences, params="", skip_convert_sequences=False
 ):
     """
     Runs BLASTn for the ASV table generate by filter_by_category.
@@ -285,18 +285,32 @@ def extract_asvs_and_blast(
     :param db: Path to BLAST db.
     :param sequences: Sequences .qza or .fasta file.
     :param params: parameters to pass to BLASTn
-    :param convert_sequences: Convert sequences to FASTA if in .qza format.
+    :param skip_convert_sequences: Skip converting sequences from .qza to .fasta.
     :return:
     """
     asv_table = pd.read_csv(asv_table, sep="\t")
     seqids = set(asv_table.iloc[:, 0])
 
-    if not convert_sequences:
+    if not skip_convert_sequences:
         fasta_file = sequences
     else:
         fasta_file = path.join(export_qiime_artifact(sequences), "dna-sequences.fasta")
 
     query = extract_asvs_from_fasta(seqids, fasta_file)
     blast_out = blastn(query, db, params=params)
+    blast_out = add_header_to_blast_out(blast_out)
+
+    return blast_out
+
+
+def add_header_to_blast_out(blast_out):
+    """
+    Adds header row to blast_out
+    :param blast_out: Tab delimited blast_out file.
+    :return:
+    """
+    df = pd.read_csv(blast_out, sep="\t")
+    df.columns = "qseqid sseqid stitle pident length mismatch gapopen qstart qend sstart send evalue bitscore".split()
+    df.to_csv(blast_out, sep="\t", index=False)
 
     return blast_out
