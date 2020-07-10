@@ -5,4 +5,5 @@ from .main import (
     run_cmd,
     merge_metadata_and_taxonomy,
     n_largest_by_category,
+    extract_asvs_and_blast,
 )
