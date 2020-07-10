@@ -319,3 +319,47 @@ def add_header_to_blast_out(blast_out):
     df.to_csv(blast_out, sep="\t", index=False)
 
     return blast_out
+
+
+def get_neighbors(seqid, blast_output_df):
+    """
+    Gets closest cultured and uncultured neighbor for a seqid.
+    :param seqid: ASV seqid
+    :param blast_output_df: BLASTn output dataframe.
+    :return: uncultured and cultured neighbor as Pandas series
+    """
+    df_seqid = blast_output_df[blast_output_df["qseqid"] == seqid]
+
+    try:
+        uncul = df_seqid[df_seqid["stitle"].str.contains("uncultured")].iloc[0].copy()
+    except IndexError:
+        uncul = pd.Series()
+
+    try:
+        cul = df_seqid[~df_seqid["stitle"].str.contains("uncultured")].iloc[0].copy()
+    except IndexError:
+        cul = pd.Series()
+
+    for series in (uncul, cul):
+        if not series.empty:
+            series["accession"], series["taxonomy"] = (
+                series["stitle"].split()[0],
+                series["stitle"].split()[1],
+            )
+            series["fmt_accession"] = series["accession"].split(".")[0] + ".1"
+            for ix, rank in enumerate(
+                "domain phylum class order family genus species".split()
+            ):
+                series[rank] = series["taxonomy"].split(";")[ix]
+
+    return uncul, cul
+
+
+def add_neighbors_to_asv_table(asv_table, neighbors):
+    """
+    Adds columns of neighbors to ASV table.
+    :param asv_table: ASV table output of filter_by_category.
+    :param neighbors: Iterator of tuples of (uncultured, cultured) neighbors in Pandas series format.
+    :return: Updates ASV table with neighbors.
+    """
+    pass
