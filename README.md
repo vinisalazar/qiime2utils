@@ -1,8 +1,8 @@
 ### qiime2utils
 
 Scripts to manipulate Qiime 2 data. Functionality so far includes:
-* Grouping data by metadata columns
-* Filtering by *n* most abundant ASVs
+* **filter_by_category:** Group data by category and filter most abundant organisms.
+* **extract_and_blast:** Subset ASVs from a FASTA file and BLAST.
 
 ```
 # Install
