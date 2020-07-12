@@ -1,7 +1,7 @@
 """
 Main module containing functions.
 """
-from Bio import SeqIO
+from Bio import SeqIO, Entrez
 from os import path
 from subprocess import Popen, PIPE, getoutput
 import pandas as pd
@@ -289,6 +289,8 @@ def extract_asvs_and_blast(
     params="",
     skip_convert_sequences=False,
     skip_add_neighbors=False,
+    _fetch_ncbi_information=False,
+    email=None,
     _print=True,
 ):
     """
@@ -299,6 +301,8 @@ def extract_asvs_and_blast(
     :param params: parameters to pass to BLASTn
     :param skip_convert_sequences: Skip converting sequences from .qza to .fasta.
     :param skip_add_neighbors: Whether to skip adding closest neighbors to table.
+    :param _fetch_ncbi_information: Whether to fetch NCBI information for neighbors.
+    :param email: NCBI email.
     :param _print: Whether to print warnings
     :return:
     """
@@ -319,8 +323,121 @@ def extract_asvs_and_blast(
         asv_table_neighbors = add_neighbors_to_asv_table(asv_table, blast_out)
         asv_neighbors_out = path.splitext(asv_table_path)[0] + "_neighbors.tsv"
         asv_table_neighbors.to_csv(asv_neighbors_out, sep="\t", index=False)
+        print(
+            "Wrote ASV table with cultured and uncultured neighbors to {}".format(
+                path.basename(asv_neighbors_out)
+            )
+        )
+        if fetch_ncbi_information:
+            fetch_ncbi_information(asv_table_neighbors, email)
+
+        return asv_table_neighbors
 
     return blast_out
+
+
+def fetch_ncbi_information(
+    asv_table_with_neighbors, text=("isolation_source", "host"), email=None
+):
+    """
+    Fetch NCBI information for accession numbers.
+    :param asv_table_with_neighbors: A dataframe outputted by extract_asvs_and_blast.
+    :param text: str or list, Text attributes to be searched in NCBI handle.
+    :param email: Email to use with NCBI Entrez.
+    :return:
+    """
+    acc_columns = [i for i in asv_table_with_neighbors.columns if "fmt_accession" in i]
+    assert (
+        acc_columns
+    ), "This table does not contain formatted accessions. Please run add_neighbors step."
+
+    if email is None:
+        email = input("Please set an email to use with NCBI's API:\t")
+    Entrez.email = email
+
+    accessions = []
+    for col in acc_columns:
+        for value in asv_table_with_neighbors[col]:
+            accessions.append(value)
+
+    accessions = set(accessions)
+    handles = dict()
+
+    # Fetching data from NCBI
+    print("Fetching data for {} entries [...]".format(len(accessions)))
+    for acc in accessions:
+        handles[acc] = parse_handle(acc)
+
+    # Parsing texts
+    if isinstance(text, str):
+        text = [
+            text,
+        ]
+    print("Parsing data for attributes {}".format(", ".join(text)))
+    asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors.copy()
+    text.append("handle")
+
+    new_cols = [kind + col for col in text for kind in ("cultured_", "uncultured_")]
+    for col_ in new_cols:
+        asv_table_with_neighbors_and_ncbi[col_] = None
+    for ix, row in asv_table_with_neighbors_and_ncbi.iterrows():
+        asv_table_with_neighbors_and_ncbi.loc[ix, "cultured_handle"] = handles[
+            row["cultured_fmt_accession"]
+        ]
+        asv_table_with_neighbors_and_ncbi.loc[ix, "uncultured_handle"] = handles[
+            row["uncultured_fmt_accession"]
+        ]
+        for col_ in text:
+            if col_ != "handle":
+                for kind_ in ("cultured_", "uncultured_"):
+                    asv_table_with_neighbors_and_ncbi.loc[
+                        ix, kind_ + col_
+                    ] = fetch_text(row[kind_ + "handle"], col_)
+                    asv_table_with_neighbors_and_ncbi.loc[ix, kind_ + col_] = (
+                        asv_table_with_neighbors_and_ncbi.loc[ix, kind_ + col_]
+                        .str.replace("=", "")
+                        .str.replace('"', "")
+                    )
+
+
+def parse_handle(accession, db="nuccore", kind="handle", _fetch_text=False):
+    """
+    Fetches data from NCBI and parses the handle.
+    :param accession: Accession number to be searched.
+    :param db: Database to be searched.
+    :param kind: Whether to return the handle, the record or only text.
+    :param _fetch_text: Whether to fetch text from handle.
+    :return:
+    """
+    handle = Entrez.esearch(db=db, term=accession)
+    record = Entrez.read(handle)
+    if len(record["IdList"]) == 0:
+        return "Accession not found"
+    record_id, *_ = record["IdList"]
+    fetch = Entrez.efetch(db=db, id=record_id, rettype="gb", retmode="text")
+
+    if kind == "record":
+        record, *_ = list(SeqIO.parse(fetch, "gb"))
+        return record
+    else:
+        handle = fetch.read()
+        if fetch_text:
+            return fetch_text(handle, fetch_text)
+        return handle
+
+
+def fetch_text(handle, text):
+    """
+    Search text in an NCBI handle.
+    :param handle: NCBI request handle (returned by parse_handle).
+    :param text: Text to be searched.
+    :return:
+    """
+    if text in handle:
+        text, *_ = handle.split(text)[-1].split("\n")
+        return text
+    else:
+        return f"{text} not found"
 
 
 def add_header_to_blast_out(blast_out):
@@ -386,7 +503,7 @@ def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
     uncul, cul = dict(), dict()
     asvs = {i for i in asv_table.iloc[:, 0]}
     if _print:
-        print("Finding neighbors for {} ASVs".format(len(asvs)))
+        print("Finding neighbors for {} ASVs.".format(len(asvs)))
 
     uncul_, cul_ = None, None
     for asv in asvs:
