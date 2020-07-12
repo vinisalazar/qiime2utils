@@ -58,6 +58,7 @@ class OptionsParser:
             sequences=options.sequences,
             params=options.params,
             skip_convert_sequences=options.skip_convert_sequences,
+            skip_add_neighbors=options.skip_add_neighbors,
         )
 
     def parse_options(self, options):
@@ -107,6 +108,12 @@ if __name__ == "__main__":
     extract_asvs_and_blast_parser.add_argument(
         "--skip_convert_sequences",
         help="Skip converting sequences from .qza to .fasta",
+        default=False,
+        action="store_true",
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "--skip_add_neighbors",
+        help="Skip adding closest cultured and uncultured neighbors",
         default=False,
         action="store_true",
     )

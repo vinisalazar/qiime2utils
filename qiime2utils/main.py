@@ -282,7 +282,13 @@ def blastn(query, db, params, _print=True):
 
 
 def extract_asvs_and_blast(
-    asv_table, db, sequences, params="", skip_convert_sequences=False
+    asv_table,
+    db,
+    sequences,
+    params="",
+    skip_convert_sequences=False,
+    skip_add_neighbors=False,
+    _print=True,
 ):
     """
     Runs BLASTn for the ASV table generate by filter_by_category.
@@ -291,8 +297,11 @@ def extract_asvs_and_blast(
     :param sequences: Sequences .qza or .fasta file.
     :param params: parameters to pass to BLASTn
     :param skip_convert_sequences: Skip converting sequences from .qza to .fasta.
+    :param skip_add_neighbors: Whether to skip adding closest neighbors to table.
+    :param _print: Whether to print warnings
     :return:
     """
+    asv_table_path = asv_table
     asv_table = pd.read_csv(asv_table, sep="\t")
     seqids = set(asv_table.iloc[:, 0])
 
@@ -304,6 +313,10 @@ def extract_asvs_and_blast(
     query = extract_asvs_from_fasta(seqids, fasta_file)
     blast_out = blastn(query, db, params=params)
     blast_out = add_header_to_blast_out(blast_out)
+    if not skip_add_neighbors:
+        asv_table_neighbors = add_neighbors_to_asv_table(asv_table, blast_out)
+        asv_neighbors_out = path.splitext(asv_table_path)[0] + "_neighbors.tsv"
+        asv_table_neighbors.to_csv(asv_neighbors_out, sep="\t", index=False)
 
     return blast_out
 
@@ -333,12 +346,12 @@ def get_neighbors(seqid, blast_output_df):
     try:
         uncul = df_seqid[df_seqid["stitle"].str.contains("uncultured")].iloc[0].copy()
     except IndexError:
-        uncul = pd.Series()
+        uncul = pd.Series(dtype="object")
 
     try:
         cul = df_seqid[~df_seqid["stitle"].str.contains("uncultured")].iloc[0].copy()
     except IndexError:
-        cul = pd.Series()
+        cul = pd.Series(dtype="object")
 
     for series in (uncul, cul):
         if not series.empty:
@@ -350,16 +363,60 @@ def get_neighbors(seqid, blast_output_df):
             for ix, rank in enumerate(
                 "domain phylum class order family genus species".split()
             ):
-                series[rank] = series["taxonomy"].split(";")[ix]
+                try:
+                    series[rank] = series["taxonomy"].split(";")[ix]
+                except IndexError:
+                    series[rank] = ""
 
     return uncul, cul
 
 
-def add_neighbors_to_asv_table(asv_table, neighbors):
+def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
     """
     Adds columns of neighbors to ASV table.
     :param asv_table: ASV table output of filter_by_category.
-    :param neighbors: Iterator of tuples of (uncultured, cultured) neighbors in Pandas series format.
+    :param blast_out: BLAST output table.
+    :param _print: More verbose output
     :return: Updates ASV table with neighbors.
     """
-    pass
+
+    # Finding neighbors
+    uncul, cul = dict(), dict()
+    asvs = {i for i in asv_table.iloc[:, 0]}
+    if _print:
+        print("Finding neighbors for {} ASVs".format(len(asvs)))
+
+    uncul_, cul_ = None, None
+    for asv in asvs:
+        uncul_, cul_ = get_neighbors(asv, blast_out)
+        uncul[asv] = uncul_
+        cul[asv] = cul_
+
+    # Add columns to ASV table
+    cul_cols = ["cultured_" + i for i in cul_.index if i not in ("stitle", "qseqid")]
+    uncul_cols = [
+        "uncultured_" + i for i in uncul_.index if i not in ("stitle", "qseqid")
+    ]
+    for col_list in (cul_cols, uncul_cols):
+        for col in col_list:
+            asv_table[col] = ""
+
+    # Iterate rows and add neighbor values
+    for ix, row in asv_table.iterrows():
+        for column in row.index:
+            if column in cul_cols:
+                try:
+                    asv_table.loc[ix, column] = cul[row.iloc[0]].loc[
+                        str(column).replace("cultured_", "")
+                    ]
+                except KeyError:
+                    asv_table.loc[ix, column] = ""
+            elif column in uncul_cols:
+                try:
+                    asv_table.loc[ix, column] = uncul[row.iloc[0]].loc[
+                        str(column).replace("uncultured_", "")
+                    ]
+                except KeyError:
+                    asv_table.loc[ix, column] = ""
+
+    return asv_table
