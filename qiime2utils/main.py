@@ -314,6 +314,7 @@ def extract_asvs_and_blast(
     blast_out = blastn(query, db, params=params)
     blast_out = add_header_to_blast_out(blast_out)
     if not skip_add_neighbors:
+        blast_out = pd.read_csv(blast_out, sep="\t")
         asv_table_neighbors = add_neighbors_to_asv_table(asv_table, blast_out)
         asv_neighbors_out = path.splitext(asv_table_path)[0] + "_neighbors.tsv"
         asv_table_neighbors.to_csv(asv_neighbors_out, sep="\t", index=False)

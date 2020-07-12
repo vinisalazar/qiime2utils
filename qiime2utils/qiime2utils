@@ -5,6 +5,7 @@ Main script and executable.
 
 import sys
 import argparse
+from os import cpu_count
 from qiime2utils.main import filter_by_category, extract_asvs_and_blast
 
 
@@ -175,6 +176,11 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         args = parser.parse_args()
+
+    if args.params is None:
+        # Default parameters for blast
+        cpus, max_target = str(int(cpu_count() / 2)), 25
+        args.params = " -num_threads {} -max_target_seqs {}".format(cpus, max_target)
 
     # Calling the Options parser
     parser = OptionsParser()
