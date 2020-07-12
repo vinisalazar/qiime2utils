@@ -51,6 +51,7 @@ def filter_by_category(table, taxonomy, metadata, output, column, n, skip_qza=Fa
             str_ += f" Grouping by column {column}."
         print(str_)
         cat_df = n_largest_by_category(cat, counts, metadata, n=n, category=column)
+        cat_df.index.name = "ASV_ID"
         cat_df.to_csv(output_file, sep="\t")
         if path.isfile(output_file):
             print(f"Wrote grouped/filtered data to {output_file}.")
