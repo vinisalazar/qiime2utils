@@ -4,6 +4,7 @@ Main module containing functions.
 from Bio import SeqIO, Entrez
 from os import path
 from subprocess import Popen, PIPE, getoutput
+from tqdm import tqdm
 import pandas as pd
 
 
@@ -382,7 +383,7 @@ def fetch_ncbi_information(
 
     # Fetching data from NCBI
     print("Fetching NCBI data for {} accessions [...]".format(len(accessions)))
-    for acc in accessions:
+    for acc in tqdm(accessions):
         handles[acc] = parse_handle(acc)
 
     # Parsing texts
