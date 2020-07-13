@@ -63,6 +63,7 @@ class OptionsParser:
             _fetch_ncbi_information=options.fetch_ncbi,
             email=options.email,
             blast_out=options.blast_out,
+            write_handles=options.write_handles,
         )
 
     def parse_options(self, options):
@@ -73,7 +74,7 @@ class OptionsParser:
 
         if options.subparser_name == "filter_by_category":
             self._filter_by_category(options)
-        elif options.subparser_name == "extract_and_blast":
+        elif options.subparser_name == "find_neighbors":
             if options.params is None:
                 # Default parameters for blast
                 cpus, max_target = str(int(cpu_count() / 2)), 25
@@ -92,9 +93,9 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(help="--", dest="subparser_name")
 
     extract_asvs_and_blast_parser = subparsers.add_parser(
-        "extract_and_blast",
+        "find_neighbors",
         description="""
-        Extract ASVs present in ASV table from sequence file and BLASTn.
+        Find neighbors ASVs present in ASV using BLASTn and optionally fetch NCBI data.
                         Required files: ASV table, sequences, BLASTdb, BLAST params.
         """,
     )
@@ -138,6 +139,12 @@ if __name__ == "__main__":
     extract_asvs_and_blast_parser.add_argument(
         "--fetch_ncbi",
         help="Whether to fetch NCBI data",
+        default=False,
+        action="store_true",
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "--write_handles",
+        help="Whether to write the full genbank handle to table.",
         default=False,
         action="store_true",
     )

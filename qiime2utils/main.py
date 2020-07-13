@@ -293,6 +293,7 @@ def extract_asvs_and_blast(
     email=None,
     blast_out=None,
     _print=True,
+    write_handles=False,
 ):
     """
     Runs BLASTn for the ASV table generate by filter_by_category.
@@ -306,6 +307,7 @@ def extract_asvs_and_blast(
     :param email: NCBI email.
     :param blast_out: An optional BLAST output table. BLAST will be skipped.
     :param _print: Whether to print warnings
+    :param write_handles: Whether to write full genbank handles to file.
     :return:
     """
     asv_table_path = asv_table
@@ -322,7 +324,7 @@ def extract_asvs_and_blast(
         blast_out = blastn(query, db, params=params)
         blast_out = add_header_to_blast_out(blast_out)
     else:
-        print("Reading BLAST from {}.".format(blast_out))
+        print("Reading BLAST from {}".format(blast_out))
     if not skip_add_neighbors:
         blast_out = pd.read_csv(blast_out, sep="\t")
         asv_table_neighbors = add_neighbors_to_asv_table(asv_table, blast_out)
@@ -334,8 +336,9 @@ def extract_asvs_and_blast(
             )
         )
         if fetch_ncbi_information:
-            print("Fetching NCBI data [...]")
-            asv_table_ncbi = fetch_ncbi_information(asv_table_neighbors, email=email)
+            asv_table_ncbi = fetch_ncbi_information(
+                asv_table_neighbors, email=email, write_handles=write_handles
+            )
             asv_table_ncbi_out = path.splitext(asv_neighbors_out)[0] + "_ncbi.tsv"
             asv_table_ncbi.to_csv(asv_table_ncbi_out, sep="\t", index=False)
             print("Wrote NCBI data to {}.".format(asv_table_ncbi_out))
@@ -347,13 +350,17 @@ def extract_asvs_and_blast(
 
 
 def fetch_ncbi_information(
-    asv_table_with_neighbors, text=("isolation_source", "host"), email=None
+    asv_table_with_neighbors,
+    text=("isolation_source", "host"),
+    email=None,
+    write_handles=False,
 ):
     """
     Fetch NCBI information for accession numbers.
     :param asv_table_with_neighbors: A dataframe outputted by extract_asvs_and_blast.
     :param text: str or list, Text attributes to be searched in NCBI handle.
     :param email: Email to use with NCBI Entrez.
+    :param write_handles: Whether to write full genbank handles to file.
     :return:
     """
     acc_columns = [i for i in asv_table_with_neighbors.columns if "fmt_accession" in i]
@@ -374,7 +381,7 @@ def fetch_ncbi_information(
     handles = dict()
 
     # Fetching data from NCBI
-    print("Fetching data for {} entries [...]".format(len(accessions)))
+    print("Fetching NCBI data for {} accessions [...]".format(len(accessions)))
     for acc in accessions:
         handles[acc] = parse_handle(acc)
 
@@ -385,10 +392,15 @@ def fetch_ncbi_information(
         ]
     elif isinstance(text, tuple):
         text = list(text)
-    print("Parsing data for attributes {}".format(", ".join(text)))
+    print(
+        "Parsing data for attributes {}".format(
+            ", ".join(("'{}'".format(i) for i in text))
+        )
+    )
     asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors.copy()
     text.append("handle")
 
+    # Adding new columns to dataframe
     new_cols = [kind + col for col in text for kind in ("cultured_", "uncultured_")]
     for col_ in new_cols:
         asv_table_with_neighbors_and_ncbi[col_] = None
@@ -399,6 +411,8 @@ def fetch_ncbi_information(
         asv_table_with_neighbors_and_ncbi.loc[ix, "uncultured_handle"] = handles[
             row["uncultured_fmt_accession"]
         ]
+
+    for ix, row in asv_table_with_neighbors_and_ncbi.iterrows():
         for col_ in text:
             if col_ != "handle":
                 for kind_ in ("cultured_", "uncultured_"):
@@ -410,6 +424,26 @@ def fetch_ncbi_information(
                         .replace("=", "")
                         .replace('"', "")
                     )
+    for column_ in ("uncultured_handle", "cultured_handle"):
+        if not write_handles:
+            del asv_table_with_neighbors_and_ncbi[column_]
+        else:
+            asv_table_with_neighbors_and_ncbi[column_] = (
+                asv_table_with_neighbors_and_ncbi[column_]
+                .str.split("ORIGIN", expand=True)
+                .iloc[:, 0]
+            )
+
+    # Sorting columns for output
+    new_cols = list(asv_table_with_neighbors_and_ncbi.columns[:11])
+    culture_cols = [
+        i for i in asv_table_with_neighbors_and_ncbi.columns if "cultured" in i
+    ]
+    culture_cols.sort()
+    for item in culture_cols:
+        new_cols.append(item)
+    asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors_and_ncbi[new_cols]
+
     return asv_table_with_neighbors_and_ncbi
 
 
