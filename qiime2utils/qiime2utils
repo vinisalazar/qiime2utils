@@ -60,6 +60,9 @@ class OptionsParser:
             params=options.params,
             skip_convert_sequences=options.skip_convert_sequences,
             skip_add_neighbors=options.skip_add_neighbors,
+            _fetch_ncbi_information=options.fetch_ncbi,
+            email=options.email,
+            blast_out=options.blast_out,
         )
 
     def parse_options(self, options):
@@ -71,6 +74,13 @@ class OptionsParser:
         if options.subparser_name == "filter_by_category":
             self._filter_by_category(options)
         elif options.subparser_name == "extract_and_blast":
+            if options.params is None:
+                # Default parameters for blast
+                cpus, max_target = str(int(cpu_count() / 2)), 25
+                options.params = " -num_threads {} -max_target_seqs {}".format(
+                    cpus, max_target
+                )
+
             self._extract_asvs_and_blast(options)
 
         return 0
@@ -117,6 +127,26 @@ if __name__ == "__main__":
         help="Skip adding closest cultured and uncultured neighbors",
         default=False,
         action="store_true",
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "-e",
+        "--email",
+        help="NCBI email to facilitate requests.",
+        default=None,
+        type=str,
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "--fetch_ncbi",
+        help="Whether to fetch NCBI data",
+        default=False,
+        action="store_true",
+    )
+    extract_asvs_and_blast_parser.add_argument(
+        "-b",
+        "--blast_out",
+        help="An optional preprocessed BLAST output (will skip BLAST step).",
+        default=None,
+        type=str,
     )
 
     filter_by_category_parser = subparsers.add_parser(
@@ -176,11 +206,6 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         args = parser.parse_args()
-
-    if args.params is None:
-        # Default parameters for blast
-        cpus, max_target = str(int(cpu_count() / 2)), 25
-        args.params = " -num_threads {} -max_target_seqs {}".format(cpus, max_target)
 
     # Calling the Options parser
     parser = OptionsParser()

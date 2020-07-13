@@ -275,8 +275,8 @@ def blastn(query, db, params, _print=True):
     )
     if _print:
         base_ = path.basename(query)
-        print("Running BLASTn for {}".format(base_))
-        print("$ {}".format(" ".join(path.basename(i) for i in cmd.split())))
+        print("Running BLASTn for {} [...]".format(base_))
+        print("\n$ {}\n".format(" ".join(path.basename(i) for i in cmd.split())))
     run_cmd(cmd, output_file, _print=True)
 
     return output_file
@@ -291,6 +291,7 @@ def extract_asvs_and_blast(
     skip_add_neighbors=False,
     _fetch_ncbi_information=False,
     email=None,
+    blast_out=None,
     _print=True,
 ):
     """
@@ -303,6 +304,7 @@ def extract_asvs_and_blast(
     :param skip_add_neighbors: Whether to skip adding closest neighbors to table.
     :param _fetch_ncbi_information: Whether to fetch NCBI information for neighbors.
     :param email: NCBI email.
+    :param blast_out: An optional BLAST output table. BLAST will be skipped.
     :param _print: Whether to print warnings
     :return:
     """
@@ -316,8 +318,11 @@ def extract_asvs_and_blast(
         fasta_file = path.join(export_qiime_artifact(sequences), "dna-sequences.fasta")
 
     query = extract_asvs_from_fasta(seqids, fasta_file)
-    blast_out = blastn(query, db, params=params)
-    blast_out = add_header_to_blast_out(blast_out)
+    if blast_out is None:
+        blast_out = blastn(query, db, params=params)
+        blast_out = add_header_to_blast_out(blast_out)
+    else:
+        print("Reading BLAST from {}.".format(blast_out))
     if not skip_add_neighbors:
         blast_out = pd.read_csv(blast_out, sep="\t")
         asv_table_neighbors = add_neighbors_to_asv_table(asv_table, blast_out)
@@ -329,7 +334,12 @@ def extract_asvs_and_blast(
             )
         )
         if fetch_ncbi_information:
-            fetch_ncbi_information(asv_table_neighbors, email)
+            print("Fetching NCBI data [...]")
+            asv_table_ncbi = fetch_ncbi_information(asv_table_neighbors, email=email)
+            asv_table_ncbi_out = path.splitext(asv_neighbors_out)[0] + "_ncbi.tsv"
+            asv_table_ncbi.to_csv(asv_table_ncbi_out, sep="\t", index=False)
+            print("Wrote NCBI data to {}.".format(asv_table_ncbi_out))
+            return asv_table_ncbi_out
 
         return asv_table_neighbors
 
@@ -352,7 +362,7 @@ def fetch_ncbi_information(
     ), "This table does not contain formatted accessions. Please run add_neighbors step."
 
     if email is None:
-        email = input("Please set an email to use with NCBI's API:\t")
+        email = input("Please set an email to use with NCBI's API: ")
     Entrez.email = email
 
     accessions = []
@@ -373,6 +383,8 @@ def fetch_ncbi_information(
         text = [
             text,
         ]
+    elif isinstance(text, tuple):
+        text = list(text)
     print("Parsing data for attributes {}".format(", ".join(text)))
     asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors.copy()
     text.append("handle")
@@ -395,9 +407,10 @@ def fetch_ncbi_information(
                     ] = fetch_text(row[kind_ + "handle"], col_)
                     asv_table_with_neighbors_and_ncbi.loc[ix, kind_ + col_] = (
                         asv_table_with_neighbors_and_ncbi.loc[ix, kind_ + col_]
-                        .str.replace("=", "")
-                        .str.replace('"', "")
+                        .replace("=", "")
+                        .replace('"', "")
                     )
+    return asv_table_with_neighbors_and_ncbi
 
 
 def parse_handle(accession, db="nuccore", kind="handle", _fetch_text=False):
@@ -410,7 +423,10 @@ def parse_handle(accession, db="nuccore", kind="handle", _fetch_text=False):
     :return:
     """
     handle = Entrez.esearch(db=db, term=accession)
-    record = Entrez.read(handle)
+    try:
+        record = Entrez.read(handle)
+    except RuntimeError:
+        return None
     if len(record["IdList"]) == 0:
         return "Accession not found"
     record_id, *_ = record["IdList"]
@@ -421,8 +437,8 @@ def parse_handle(accession, db="nuccore", kind="handle", _fetch_text=False):
         return record
     else:
         handle = fetch.read()
-        if fetch_text:
-            return fetch_text(handle, fetch_text)
+        if _fetch_text:
+            return fetch_text(handle, _fetch_text)
         return handle
 
 
@@ -433,11 +449,11 @@ def fetch_text(handle, text):
     :param text: Text to be searched.
     :return:
     """
-    if text in handle:
+    if (handle is None) or (text not in handle):
+        return f"{text} not found"
+    elif text in handle:
         text, *_ = handle.split(text)[-1].split("\n")
         return text
-    else:
-        return f"{text} not found"
 
 
 def add_header_to_blast_out(blast_out):
@@ -505,18 +521,39 @@ def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
     if _print:
         print("Finding neighbors for {} ASVs.".format(len(asvs)))
 
-    uncul_, cul_ = None, None
     for asv in asvs:
         uncul_, cul_ = get_neighbors(asv, blast_out)
         uncul[asv] = uncul_
         cul[asv] = cul_
 
-    # Add columns to ASV table
-    cul_cols = ["cultured_" + i for i in cul_.index if i not in ("stitle", "qseqid")]
+    # Add columns to ASV table - I had to do this by hand
     uncul_cols = [
-        "uncultured_" + i for i in uncul_.index if i not in ("stitle", "qseqid")
+        "uncultured_sseqid",
+        "uncultured_pident",
+        "uncultured_length",
+        "uncultured_mismatch",
+        "uncultured_gapopen",
+        "uncultured_qstart",
+        "uncultured_qend",
+        "uncultured_sstart",
+        "uncultured_send",
+        "uncultured_evalue",
+        "uncultured_bitscore",
+        "uncultured_accession",
+        "uncultured_taxonomy",
+        "uncultured_fmt_accession",
+        "uncultured_domain",
+        "uncultured_phylum",
+        "uncultured_class",
+        "uncultured_order",
+        "uncultured_family",
+        "uncultured_genus",
+        "uncultured_species",
     ]
+    cul_cols = [i.replace("uncultured", "cultured") for i in uncul_cols]
+
     for col_list in (cul_cols, uncul_cols):
+
         for col in col_list:
             asv_table[col] = ""
 
