@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="qiime2utils",
-    version="v0.0.7",
+    version="v0.0.8",
     author="Vini Salazar",
     author_email="viniws@gmail.com",
     description="qiime2utils - Utility scripts for Qiime 2",
@@ -19,5 +19,5 @@ setuptools.setup(
     scripts=["qiime2utils/qiime2utils"],
     include_package_data=True,
     python_requires=">=3.6",
-    install_requires=("pytest", "pandas", "biopython"),
+    install_requires=("pytest", "pandas", "biopython", "tqdm"),
 )
