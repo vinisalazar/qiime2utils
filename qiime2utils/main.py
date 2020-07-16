@@ -436,7 +436,9 @@ def fetch_ncbi_information(
             )
 
     # Sorting columns for output
-    new_cols = list(asv_table_with_neighbors_and_ncbi.columns[:11])
+    new_cols = [
+        i for i in asv_table_with_neighbors_and_ncbi.columns if "cultured" not in i
+    ]
     culture_cols = [
         i for i in asv_table_with_neighbors_and_ncbi.columns if "cultured" in i
     ]
