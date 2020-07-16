@@ -17,7 +17,7 @@ def print_help():
     filter_by_category: Group by a category of metadata and filter n most abundant organisms.
                         Required files: feature_table, taxonomy_table, metadata.
     
-    extract_and_blast: Run BLASTn for ASVs in the output of 'filter_by_category'.
+    find_neighbors: Run BLASTn for ASVs in the output of 'filter_by_category' to find genetic neighbors.
                        Required files: asv_table, sequences, blastdb.
     
     """
