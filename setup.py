@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="qiime2utils",
-    version="v0.0.8",
+    version="v0.0.9",
     author="Vini Salazar",
     author_email="viniws@gmail.com",
     description="qiime2utils - Utility scripts for Qiime 2",
