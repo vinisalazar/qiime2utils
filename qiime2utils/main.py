@@ -216,9 +216,6 @@ def n_largest_by_category(
         grouped_df["counts"] = grouped_counts
         grouped_df[category] = value
         if not samples_as_categories:
-            import pdb
-
-            pdb.set_trace()
             grouped_df["samples"] = str_samples
         nlargest[value] = grouped_df
 
