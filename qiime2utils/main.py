@@ -495,6 +495,7 @@ def fetch_ncbi_information(
         "uncultured_species",
         "uncultured_isolation_source",
         "uncultured_host",
+        "samples",
     ]
 
     asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors_and_ncbi[new_cols]
