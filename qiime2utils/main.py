@@ -260,8 +260,8 @@ def blastn(query, db, params, _print=True):
     :return:
     """
     blastn_bin = getoutput("which blastn")
-    assert (
-        "command not found" not in blastn_bin
+    assert all(
+        ("command not found" not in blastn_bin, blastn_bin != "")
     ), "Could not find blastn. Make sure blastn is on $PATH."
     assert path.isfile(db), "Could not find db {}. Make sure db exists".format(db)
     output_file, _ = path.splitext(query)
@@ -445,6 +445,7 @@ def fetch_ncbi_information(
     culture_cols.sort()
     for item in culture_cols:
         new_cols.append(item)
+
     asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors_and_ncbi[new_cols]
 
     return asv_table_with_neighbors_and_ncbi
@@ -521,7 +522,14 @@ def get_neighbors(seqid, blast_output_df):
         uncul = pd.Series(dtype="object")
 
     try:
-        cul = df_seqid[~df_seqid["stitle"].str.contains("uncultured")].iloc[0].copy()
+        cul = (
+            df_seqid[
+                ~(df_seqid["stitle"].str.contains("uncultured"))
+                & ~(df_seqid["stitle"].str.contains("metagenome"))
+            ]
+            .iloc[0]
+            .copy()
+        )
     except IndexError:
         cul = pd.Series(dtype="object")
 
