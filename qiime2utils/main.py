@@ -206,7 +206,6 @@ def n_largest_by_category(
             grouped_df = cat[cat[category] == value][asvs].astype("float")
             grouped_counts = grouped_df.sum().nlargest(n)
             str_samples = " ".join(i for i in grouped_df.index if i in samples)
-            grouped_df["samples"] = str_samples  # add a column with sample names
 
         grouped_counts = grouped_counts[
             grouped_counts > 0
@@ -216,6 +215,8 @@ def n_largest_by_category(
         grouped_df = grouped_df[tax_columns].copy()
         grouped_df["counts"] = grouped_counts
         grouped_df[category] = value
+        if not samples_as_categories:
+            grouped_df["samples"] = str_samples
         nlargest[value] = grouped_df
 
     cat_df = pd.concat((v for k, v in nlargest.items()))
