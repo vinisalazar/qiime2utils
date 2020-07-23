@@ -435,16 +435,65 @@ def fetch_ncbi_information(
                 .iloc[:, 0]
             )
 
-    # Sorting columns for output
     new_cols = [
-        i for i in asv_table_with_neighbors_and_ncbi.columns if "cultured" not in i
+        "ASV_ID",
+        "Taxon",
+        "Confidence",
+        "domain",
+        "phylum",
+        "class",
+        "order",
+        "family",
+        "genus",
+        "species",
+        "counts",
+        "cultured_accession",
+        "cultured_fmt_accession",
+        "cultured_bitscore",
+        "cultured_evalue",
+        "cultured_gapopen",
+        "cultured_pident",
+        "cultured_qstart",
+        "cultured_qend",
+        "cultured_sstart",
+        "cultured_send",
+        "cultured_length",
+        "cultured_mismatch",
+        "cultured_sseqid",
+        "cultured_taxonomy",
+        "cultured_domain",
+        "cultured_phylum",
+        "cultured_class",
+        "cultured_order",
+        "cultured_family",
+        "cultured_genus",
+        "cultured_species",
+        "cultured_isolation_source",
+        "cultured_host",
+        "uncultured_accession",
+        "uncultured_fmt_accession",
+        "uncultured_bitscore",
+        "uncultured_evalue",
+        "uncultured_gapopen",
+        "uncultured_pident",
+        "uncultured_qstart",
+        "uncultured_qend",
+        "uncultured_sstart",
+        "uncultured_send",
+        "uncultured_length",
+        "uncultured_mismatch",
+        "uncultured_sseqid",
+        "uncultured_taxonomy",
+        "uncultured_domain",
+        "uncultured_phylum",
+        "uncultured_class",
+        "uncultured_order",
+        "uncultured_family",
+        "uncultured_genus",
+        "uncultured_species",
+        "uncultured_isolation_source",
+        "uncultured_host",
     ]
-    culture_cols = [
-        i for i in asv_table_with_neighbors_and_ncbi.columns if "cultured" in i
-    ]
-    culture_cols.sort()
-    for item in culture_cols:
-        new_cols.append(item)
 
     asv_table_with_neighbors_and_ncbi = asv_table_with_neighbors_and_ncbi[new_cols]
 
@@ -537,7 +586,7 @@ def get_neighbors(seqid, blast_output_df):
         if not series.empty:
             series["accession"], series["taxonomy"] = (
                 series["stitle"].split()[0],
-                series["stitle"].split()[1],
+                " ".join(series["stitle"].split()[1:]),
             )
             series["fmt_accession"] = series["accession"].split(".")[0] + ".1"
             for ix, rank in enumerate(
@@ -602,22 +651,27 @@ def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
         for col in col_list:
             asv_table[col] = ""
 
+    def get_row(row_, kind, column_):
+        """
+        Extracts row from ASV table
+        :param row_: name of column to add to ASV table
+        :param kind: cultured_ or uncultured_
+        :param column_: column of ASV table to update
+        :return: value to add to ASV table
+        """
+        try:
+            output = cul[row_.iloc[0]].loc[str(column_).replace(kind, "")]
+        except KeyError:
+            output = ""
+
+        return output
+
     # Iterate rows and add neighbor values
     for ix, row in asv_table.iterrows():
         for column in row.index:
             if column in cul_cols:
-                try:
-                    asv_table.loc[ix, column] = cul[row.iloc[0]].loc[
-                        str(column).replace("cultured_", "")
-                    ]
-                except KeyError:
-                    asv_table.loc[ix, column] = ""
+                asv_table.loc[ix, column] = get_row(row, "cultured_", column)
             elif column in uncul_cols:
-                try:
-                    asv_table.loc[ix, column] = uncul[row.iloc[0]].loc[
-                        str(column).replace("uncultured_", "")
-                    ]
-                except KeyError:
-                    asv_table.loc[ix, column] = ""
+                asv_table.loc[ix, column] = get_row(row, "uncultured_", column)
 
     return asv_table

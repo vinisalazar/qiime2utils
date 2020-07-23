@@ -109,10 +109,7 @@ if __name__ == "__main__":
         "-db", "--db", help="Path to BLAST database.", required=True
     )
     extract_asvs_and_blast_parser.add_argument(
-        "-s",
-        "--sequences",
-        help="Sequences in either .qza or .fasta format.",
-        required=True,
+        "-s", "--sequences", help="Sequences in either .qza or .fasta format.",
     )
     extract_asvs_and_blast_parser.add_argument(
         "--params", help="Parameters to pass to BLASTn"
