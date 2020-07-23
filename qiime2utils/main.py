@@ -197,6 +197,7 @@ def n_largest_by_category(
         category_values = {i for i in cat[category].value_counts().index if i == i}
         samples_as_categories = False
 
+    str_samples = ""  # This is just to suppress compiler warnings
     # parsing categories
     for value in category_values:
         if samples_as_categories:
@@ -652,16 +653,17 @@ def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
         for col in col_list:
             asv_table[col] = ""
 
-    def get_row(row_, kind, column_):
+    def get_row(dict_, row_, kind, column_):
         """
         Extracts row from ASV table
+        :param dict_: Dict of cultured or uncultured neighbors
         :param row_: name of column to add to ASV table
         :param kind: cultured_ or uncultured_
         :param column_: column of ASV table to update
         :return: value to add to ASV table
         """
         try:
-            output = cul[row_.iloc[0]].loc[str(column_).replace(kind, "")]
+            output = dict_[row_.iloc[0]].loc[str(column_).replace(kind, "")]
         except KeyError:
             output = ""
 
@@ -671,8 +673,8 @@ def add_neighbors_to_asv_table(asv_table, blast_out, _print=True):
     for ix, row in asv_table.iterrows():
         for column in row.index:
             if column in cul_cols:
-                asv_table.loc[ix, column] = get_row(row, "cultured_", column)
+                asv_table.loc[ix, column] = get_row(cul, row, "cultured_", column)
             elif column in uncul_cols:
-                asv_table.loc[ix, column] = get_row(row, "uncultured_", column)
+                asv_table.loc[ix, column] = get_row(uncul, row, "uncultured_", column)
 
     return asv_table
