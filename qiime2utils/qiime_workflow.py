@@ -380,7 +380,11 @@ class QiimeWorkflow:
         ), "Invalid MANIFEST file."
 
     def make_path(self, step, kind):
-        return path.join(self.directories[kind], step)
+        if kind != "exports":
+            kind_ = "." + kind
+        else:
+            kind_ = ""
+        return path.join(self.directories[kind], step + kind_)
 
     @staticmethod
     def running_step(ix, stepname):
