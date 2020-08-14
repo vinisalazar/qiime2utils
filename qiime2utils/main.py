@@ -120,7 +120,7 @@ def run_cmd(cmd, output, _print=True):
             print(
                 f"Couldn't create output file at {output}. Please check the stdout and stderr:"
             )
-            print(stdout, stderr)
+            print(str(stdout), str(stderr))
             print(f"Command was:\t'{cmd}'")
 
 
