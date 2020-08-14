@@ -372,7 +372,11 @@ class QiimeWorkflow:
         self.manifest = pd.read_csv(self.manifest_path, sep=sep)
         assert all(
             i in self.manifest.columns
-            for i in ("sample-id", "forward-absolute-path", "reverse-absolute-path")
+            for i in (
+                "sample-id",
+                "forward-absolute-filepath",
+                "reverse-absolute-filepath",
+            )
         ), "Invalid MANIFEST file."
 
     def make_path(self, step, kind):
