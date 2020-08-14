@@ -5,11 +5,19 @@ from tqdm import tqdm
 
 
 class QiimeWorkflow:
-    def __init__(self, manifest_path, classifier=None, output_dir=None, sep="\t"):
+    def __init__(
+        self,
+        manifest_path,
+        classifier=None,
+        output_dir=None,
+        steps_to_skip=None,
+        sep="\t",
+    ):
         self.manifest = None
         self.manifest_path = manifest_path
         self.validate_import_manifest(sep=sep)
         self.classifier = classifier
+        self.steps_to_skip = steps_to_skip
 
         # Default output is manifest directory
         if not output_dir:
@@ -360,6 +368,12 @@ class QiimeWorkflow:
         }
 
         print("Starting workflow.")
+
+        if self.steps_to_skip:
+            steps_to_skip = self.steps_to_skip.split(",")
+            print("Skipping steps: {}".format(str(steps_to_skip)))
+            for step in steps_to_skip:
+                del steps[step]
 
         for ix, (step, function) in tqdm(enumerate(steps.items())):
             self.running_step(ix, step)

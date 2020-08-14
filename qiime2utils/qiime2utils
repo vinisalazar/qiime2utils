@@ -75,6 +75,7 @@ class OptionsParser:
             manifest_path=options.input_file,
             classifier=options.classifier,
             output_dir=options.output_dir,
+            steps_to_skip=options.steps_to_skip,
         )
         wf.run()
 
@@ -127,6 +128,15 @@ if __name__ == "__main__":
         "-o",
         "--output_dir",
         help="Set an output directory for the pipeline. Default is the input file's directory.",
+        required=False,
+        default=None,
+    )
+    qiime_workflow.add_argument(
+        "-s",
+        "--steps_to_skip",
+        help="Comma-delimited string with steps to skip. Choose from: {}".format(
+            ["import_data", "cutadapt", "denoise", "taxonomy", "phylogeny", "barplots"]
+        ),
         required=False,
         default=None,
     )
