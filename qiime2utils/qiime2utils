@@ -7,6 +7,7 @@ import sys
 import argparse
 from os import cpu_count
 from qiime2utils.main import filter_by_category, extract_asvs_and_blast
+from qiime2utils.qiime_workflow import QiimeWorkflow
 
 
 def print_help():
@@ -19,6 +20,8 @@ def print_help():
     
     find_neighbors: Run BLASTn for ASVs in the output of 'filter_by_category' to find genetic neighbors.
                        Required files: asv_table, sequences, blastdb.
+                       
+    workflow: A basic Qiime 2 workflow for paired-end data.
     
     """
     )
@@ -66,6 +69,15 @@ class OptionsParser:
             write_handles=options.write_handles,
         )
 
+    @staticmethod
+    def _workflow(options):
+        wf = QiimeWorkflow(
+            manifest_path=options.input_file,
+            classifier=options.classifier,
+            output_dir=options.output_dir,
+        )
+        wf.run()
+
     def parse_options(self, options):
         """
         Parse user options and call the correct workflow.
@@ -84,6 +96,9 @@ class OptionsParser:
 
             self._extract_asvs_and_blast(options)
 
+        elif options.subparser_name == "workflow":
+            self._workflow(options)
+
         return 0
 
 
@@ -91,6 +106,30 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers(help="--", dest="subparser_name")
+
+    qiime_workflow = subparsers.add_parser(
+        "workflow",
+        description="""
+        A basic Qiime 2 workflow for paired-end data.
+        """,
+    )
+
+    qiime_workflow.add_argument(
+        "-i", "--input_file", help="Manifest file used as input.", required=True
+    )
+    qiime_workflow.add_argument(
+        "-c",
+        "--classifier",
+        help="Qiime 2 artifact of taxonomic classifier",
+        required=True,
+    )
+    qiime_workflow.add_argument(
+        "-o",
+        "--output_dir",
+        help="Set an output directory for the pipeline. Default is the input file's directory.",
+        required=False,
+        default=None,
+    )
 
     extract_asvs_and_blast_parser = subparsers.add_parser(
         "find_neighbors",
