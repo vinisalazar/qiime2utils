@@ -1,6 +1,7 @@
 import pandas as pd
 from os import path, mkdir, rename
 from qiime2utils import run_cmd
+from tqdm import tqdm
 
 
 class QiimeWorkflow:
@@ -360,7 +361,7 @@ class QiimeWorkflow:
 
         print("Starting workflow.")
 
-        for ix, (step, function) in enumerate(steps.items()):
+        for ix, (step, function) in tqdm(enumerate(steps.items())):
             self.running_step(ix, step)
             function()
 
