@@ -65,17 +65,20 @@ def export_qiime_artifact(qza_file, _print=False):
     :param _print: pass to run_cmd
     :return: Output directory.
     """
-    qiime_bin = getoutput("qiime")
-    assert (
-        qiime_bin
-    ), "Could not detect Qiime 2 on your system. Make sure it is on $PATH"
-    assert path.isfile(qza_file), f"{qza_file} does not exist!"
     qza_file, qza_file_abs = path.basename(qza_file), path.abspath(qza_file)
     out_dir = path.join(path.dirname(qza_file_abs), path.splitext(qza_file)[0])
     cmd = f"qiime tools export --input-path {qza_file_abs} --output-path {out_dir}"
     run_cmd(cmd, out_dir, _print=_print)
 
     return out_dir
+
+
+def validate_qiime():
+    qiime_bin = getoutput("qiime")
+    assert (
+        qiime_bin
+    ), "Could not detect Qiime 2 on your system. Make sure it is on $PATH"
+    return 0
 
 
 def convert_biom_table(biom_table, _print=False):
@@ -104,6 +107,8 @@ def run_cmd(cmd, output, _print=True):
     :param _print: Whether to print if the file was created.
     :return:
     """
+    if "qiime" in cmd:
+        validate_qiime()
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = p.communicate()
 
