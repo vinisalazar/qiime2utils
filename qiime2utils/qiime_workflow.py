@@ -270,7 +270,7 @@ class QiimeWorkflow:
             --i-seqs {0} \
             --i-taxonomy {1} \
             --p-exclude mitochondria,chloroplast \
-            --o-filtered-seqs {2}
+            --o-filtered-sequences {2}
         """.format(
                 self._filenames["step3_seqs"]["qza"], output_taxonomy_qza, filtered_seqs
             ),
