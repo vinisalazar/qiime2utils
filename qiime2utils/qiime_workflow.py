@@ -267,7 +267,7 @@ class QiimeWorkflow:
         run_cmd(
             """
         qiime taxa filter-seqs \
-            --i-seqs {0} \
+            --i-sequences {0} \
             --i-taxonomy {1} \
             --p-exclude mitochondria,chloroplast \
             --o-filtered-sequences {2}
