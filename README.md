@@ -3,7 +3,7 @@
 Scripts to manipulate Qiime 2 data. Functionality so far includes:
 * **filter_by_category:** Group data by category and filter most abundant organisms.
 * **extract_and_blast:** Subset ASVs from a FASTA file and BLAST.
-* **workflows:** Full Qiime 2 workflow for paired-end data
+* **workflow:** Full Qiime 2 workflow for paired-end data
 
 ```
 # Install
