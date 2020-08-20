@@ -199,8 +199,21 @@ class QiimeWorkflow:
             output_table_exports,
         )
 
+        # Export raw table
+        run_cmd(
+            """
+        qiime tools export \
+            --input-path {0} \
+            --output-path {1}
+        """.format(
+                output_table_qza, output_table_exports
+            ),
+            output_table_exports,
+        )
+
     def _visualize_and_export_seqs(self):
         output_seqs_qzv = self._filenames["step3_seqs"]["qzv"]
+        output_seqs_qza = self._filenames["step3_seqs"]["qza"]
         output_seqs_exports = self._filenames["step3_seqs"]["exports"]
         # Create visualization of seqs
         run_cmd(
@@ -222,6 +235,18 @@ class QiimeWorkflow:
             --output-path {1}
         """.format(
                 output_seqs_qzv, output_seqs_exports
+            ),
+            output_seqs_exports,
+        )
+
+        # Export raw seqs
+        run_cmd(
+            """
+        qiime tools export \
+            --input-path {0} \
+            --output-path {1}
+        """.format(
+                output_seqs_qza, output_seqs_exports
             ),
             output_seqs_exports,
         )
